@@ -5,7 +5,21 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::ops::{Index, IndexMut};
-use std::slice::{Iter, IterMut};
+//use std::slice::{Iter, IterMut};
+
+
+pub trait Nameable<T> {
+    //
+    type Item;
+
+    // add an item at the end of the container
+    fn push(&mut self, name: &str, item: T);
+
+    // get an item or a list of items, depending on the container (unique or duplicate)
+    fn get_by_name(&self, name: &str) -> Self::Item;
+
+}
+
 
 /// Macro which builds a vector of Record data fields.
 ///
@@ -24,29 +38,16 @@ macro_rules! vector_of {
     }};
 }
 
-pub trait Inserter {
-    fn inserter(&mut self, name: &str, index: usize); 
-}
-impl Inserter for HashMap<String, usize> {
-    fn inserter(&mut self, name: &str, index: usize) {
-        self.insert(String::from(name), index);
-    }
-}
-impl Inserter for HashMap<String, Vec<usize>> {
-    fn inserter(&mut self, name: &str, index: usize) {
-        self.insert(String::from(name), vec![index]);
-    }
-}
 
 #[derive(Clone)]
-pub struct NamedObjectsContainer<T, U> {
+pub struct NamedObjectsContainer<T,U> {
     /// List of T structs
     pub list: Vec<T>,
     /// Hashmap keeping track of the name vs. index of the structure in the previous list
     pub hmap: HashMap<String, U>,
 }
 
-impl<T,U: Inserter> NamedObjectsContainer<T,U> {
+impl<T,U> NamedObjectsContainer<T,U> {
     /// Creates a new Container.
     ///
     /// # Arguments
@@ -57,28 +58,6 @@ impl<T,U: Inserter> NamedObjectsContainer<T,U> {
             list: Vec::new(),
             hmap: HashMap::new(),
         }        
-    }
-
-    /// Adds a Field structure to the end of the record.
-    pub fn push(&mut self, name: &str, item: T) {
-        // finally, save Field struct
-        self.list.push(item);
-
-        // item is pushed at the end of the list. So its index is length of the list - 1
-        let index = self.list.len() - 1;
-
-        // if the item's name is already in the list, just add the index to the vector holding the list
-        // of indexes for the same name
-        /*
-        if self.hmap.contains_key(name) {
-            self.hmap.get_mut(name).unwrap().push(index);
-        }
-        // if not, create list of indices and add new index to it
-        else {
-            self.hmap.insert(String::from(name), vec![index]);
-        }*/
-
-        self.hmap.inserter(name, index);
     }
 
     /// Returns the item corresponding to index
@@ -109,45 +88,76 @@ impl<T,U: Inserter> NamedObjectsContainer<T,U> {
     pub fn len(&self) -> usize {
         self.list.len()
     }
-
-         
  
 }
 
-#[cfg(test)]
-mod tests {
+impl<'a, T: 'a> Nameable<T> for NamedObjectsContainer<T, Vec<usize>> {
+    // 
+    type Item = Vec<&'a T>;
 
-   use noc::NamedObjectsContainer;
+    /// Adds a Field structure to the end of the record.
+    fn push(&mut self, name: &str, item: T) {
+        // finally, save Field struct
+        self.list.push(item);
 
-    struct Atom {
-        proton: u8,
-        neutron: u8,
+        // item is pushed at the end of the list. So its index is length of the list - 1
+        let index = self.list.len() - 1;
+
+        // if the item's name is already in the list, just add the index to the vector holding the list
+        // of indexes for the same name
+        if self.hmap.contains_key(name) {
+            self.hmap.get_mut(name).unwrap().push(index);
+        }
+        // if not, create list of indices and add new index to it
+        else {
+            self.hmap.insert(String::from(name), vec![index]);
+        }
     }
 
-    #[test]
-    fn basic_test() {
+    fn get_by_name(&self, name: &str) -> Self::Item {
+        // get vector of indexes from hmap
+        let indexes = self.hmap.get(name).expect("no entry found for key");
 
-        // setup data
-        let mut noc = NamedObjectsContainer::<Atom>::new(false);
-        assert_eq!(noc.len(), 0);
+        // build the vector of items corresponding to previous indexes
+        let items: Vec<_> = indexes.iter().map(|i| *self.list.get(*i).unwrap()).collect();
 
-        noc.push("H", Atom{ proton:1, neutron:0 });
-        noc.push("He", Atom{ proton:2, neutron:2 });
-        assert_eq!(noc.len(), 2);
-
-        assert!(noc.contains_name("H"));
-        assert!(noc.contains_name("He"));
-        assert!(!noc.contains_name("Cl"));
-
-        let H = noc.get(0).unwrap();
-        assert_eq!(H.proton, 1);
-        assert_eq!(H.neutron, 0);
-
-        assert!(noc.get(10).is_none());
-
-
-        
+        // return vector
+        items
     }
-
-   
 }
+
+impl<'a,T> Nameable<T> for NamedObjectsContainer<T, usize> {
+    //
+    type Item = &'a T;
+
+    /// Adds a Field structure to the end of the record.
+    fn push(&mut self, name: &str, item: T) {
+        // finally, save Field struct
+        self.list.push(item);
+
+        // item is pushed at the end of the list. So its index is length of the list - 1
+        let index = self.list.len() - 1;
+
+        // if the item's name is already in the list, just add the index to the vector holding the list
+        self.hmap.insert(String::from(name), index);
+    }
+
+    fn get_by_name(&'a self, name: &str) -> Self::Item {
+        // get the single index from hmap. This index allows to find the corresponding item
+        let index = self.hmap.get(name).expect("no entry found for key");
+
+        // get item
+        &self.list[*index]
+    }
+}
+
+
+
+// type aliases
+pub type UniqueNamedObjectsContainer<T> = NamedObjectsContainer<T, usize>;
+pub type UNOC<T> = UniqueNamedObjectsContainer<T>;
+
+pub type DuplicateNamedObjectsContainer<T> = NamedObjectsContainer<T, Vec<usize>>;
+pub type DNOC<T> = DuplicateNamedObjectsContainer<T>;
+
+
