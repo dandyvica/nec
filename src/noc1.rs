@@ -8,6 +8,10 @@ use std::ops::{Index, IndexMut};
 use std::marker::PhantomData;
 //use std::slice::{Iter, IterMut};
 
+pub trait Nameable {
+    fn get_name(&self) -> String;
+}
+
 // Encompassing structure to keep tie between name and element
 pub struct Item<Element> {
     name: String,
@@ -42,8 +46,8 @@ impl<'a,T,Mode> NamedObjectsContainer<'a,T,Mode> {
         }        
     }
 
-    pub fn push(&'a mut self, name: &str, element: T) {
-        // create new item
+    pub fn push_with_name(&'a mut self, name: &str, element: T) {
+        // create new itemNamedObjectsContainer
         let item = Item{ name: String::from(name), element: element };
 
         // finally, save Field struct
@@ -63,6 +67,15 @@ impl<'a,T,Mode> NamedObjectsContainer<'a,T,Mode> {
         else {
             self.hmap.insert(String::from(name), vec![&elem_ref]);
         }
+    }
+
+    /// Add element at the end of the container. As T implements Nameable, no need to pass the name.
+    ///
+    /// # Arguments
+    /// * `element` - Element to add
+    pub fn push(&'a mut self, element: T) where T: Nameable {
+        self.push_with_name(&element.get_name(), element);
+
     }
 
     /// Returns the name of the element corresponding to index
@@ -88,7 +101,7 @@ impl<'a,T,Mode> NamedObjectsContainer<'a,T,Mode> {
     }
 
     /// Returns the mutable item corresponding to index
-    ///
+    ///NamedObjectsContainer
     /// # Arguments
     /// * `index` - Item index
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
@@ -114,6 +127,7 @@ impl<'a,T,Mode> NamedObjectsContainer<'a,T,Mode> {
     /*pub fn get_by_name(&self, name: &str) -> Option<&Vec<&T>> {
         self.hmap.get(name)
     }*/
+
  
 }
 
@@ -132,6 +146,22 @@ impl<'a, T> Index<&'a str> for NamedObjectsContainer<'a,T,Unicity> {
         inner_item
     }
 }
+
+/*
+impl<'a, T> IndexMut<&'a str> for NamedObjectsContainer<'a,T,Unicity> {
+
+    fn index_mut(&mut self, name: &str) -> &mut T {
+        // get reference on vector of items
+        let v = &mut *self.hmap.get_mut(name).unwrap();
+
+        // get inner item 
+        let inner_item = v.get_mut(0).unwrap();
+
+        // return reference on element
+        inner_item
+    }
+}
+*/
 
 impl<'a,T> Index<&'a str> for NamedObjectsContainer<'a,T,Multiplicity> {
     type Output = Vec<&'a T>;
