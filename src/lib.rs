@@ -1,5 +1,5 @@
-pub mod noc1;
-pub mod noc2;
+//pub mod noc1;
+pub mod noc3;
 
 #[cfg(test)]
 mod tests {

@@ -180,14 +180,16 @@ impl<'a, Element: Nameable> NamedObjectsContainer<Element, Vec<&'a Element>> {
         // if the item's name is already in the list, just add the index to the vector holding the list
         // of indexes for the same name
         let elem_ref = self.list.get(index).unwrap();
+        self.hmap.entry(name).or_insert(Vec::new()).push(&elem_ref);
 
+        /*
         if self.hmap.contains_key(&name) {
             self.hmap.get_mut(&name).unwrap().push(&elem_ref);
         }
         // if not, create list of indices and add new index to it
         else {
             self.hmap.insert(name, vec![&elem_ref]);
-        }
+        }*/
     }    
 }
 
