@@ -2,53 +2,64 @@
 //! which hold values when reading a record-based file.
 //!
 //! # Examples
-use std::collections::LinkedList;
 use std::collections::HashMap;
 
 use std::fmt;
 use std::ops::{Index, IndexMut};
 use std::slice::{Iter, IterMut};
 
-
 // Implemented by those structure from which we can get the name
 pub trait Nameable {
-    fn get_name(&self) -> String;
+    fn get_name(&self) -> &str;
 }
 pub trait Insertable {
-    fn add_entry(&mut self, name: String, index: usize);
+    fn add_entry(&mut self, name: &str, index: usize);
 }
 impl Insertable for HashMap<String, usize> {
-    fn add_entry(&mut self, name: String, index: usize) {
-        self.insert(name, index);
+    fn add_entry(&mut self, name: &str, index: usize) {
+        self.insert(name.to_string(), index);
     }
 }
 impl Insertable for HashMap<String, Vec<usize>> {
-    fn add_entry(&mut self, name: String, index: usize) {
-        self.entry(name).or_insert(Vec::new()).push(index);
+    fn add_entry(&mut self, name: &str, index: usize) {
+        self.entry(name.to_string())
+            .or_insert(Vec::new())
+            .push(index);
     }
 }
 
-
 pub struct NamedObjectsContainer<Element, Collection> {
     /// List of T structs
-    pub list: Vec<Element>,
+    list: Vec<Element>,
     /// Hashmap keeping track of the name vs. index of the structure in the previous list
-    pub hmap: HashMap<String, Collection>,
+    hmap: HashMap<String, Collection>,
 }
 
-impl<Element: Nameable, Collection> NamedObjectsContainer<Element, Collection>
- where 
-    HashMap<String,Collection>: Insertable {
+/*
+pub struct Wrapped<Element> {
+    name: String,
+    element: Element,
+}
 
+impl<Element> Nameable for Wrapped<Element> {
+    fn get_name(&self) -> String {
+        self.name.clone()
+    }
+}*/
+
+impl<Element, Collection> NamedObjectsContainer<Element, Collection>
+where
+    HashMap<String, Collection>: Insertable,
+{
     /// Creates a new Container with named objects.
     pub fn new() -> NamedObjectsContainer<Element, Collection> {
         // initialize all relevant members
         NamedObjectsContainer {
             list: Vec::new(),
             hmap: HashMap::new(),
-        }        
-    }    
-    
+        }
+    }
+
     /// Tests whether the container contains an item by giving its name.
     ///
     /// # Arguments
@@ -56,14 +67,14 @@ impl<Element: Nameable, Collection> NamedObjectsContainer<Element, Collection>
     pub fn contains_name(&self, name: &str) -> bool {
         self.hmap.contains_key(name)
     }
-    
+
     /// Returns the item corresponding to index
     ///
     /// # Arguments
     /// * `index` - Element index
     pub fn get(&self, index: usize) -> Option<&Element> {
         self.list.get(index)
-    }     
+    }
 
     /// Returns the number of items in the container.
     pub fn len(&self) -> usize {
@@ -71,17 +82,29 @@ impl<Element: Nameable, Collection> NamedObjectsContainer<Element, Collection>
     }
 
     // add an item at the end of the list
-    pub fn push(&mut self, element: Element) {
-        let name = element.get_name();
+    pub fn push(&mut self, element: Element)
+    where
+        Element: Nameable,
+    {
+        self.list.push(element);
+        let index = self.list.len() - 1;
+
+        let last_element = self.list.get(index).unwrap();
+        let name = last_element.get_name();
+
+        self.hmap.add_entry(name, index);
+    }
+
+    // add an item at the end of the list
+    pub fn push_with_name(&mut self, name: &str, element: Element) {
         self.list.push(element);
         let index = self.list.len() - 1;
         self.hmap.add_entry(name, index);
     }
 
-    fn _get_item_by_name(&self, name: &str) -> Option<&Collection> {
-        self.hmap.get(name)
-    }    
-   
+    pub fn names(&self) -> Vec<String> {
+        self.hmap.keys().map(|e| e.clone()).collect()
+    }
 }
 
 //-----------------------------------------------------------------------
@@ -110,7 +133,7 @@ impl<Element> NamedObjectsContainer<Element, Vec<usize>> {
 
         let indexes = self.hmap.get(name).unwrap();
         let v: Vec<_> = indexes.iter().map(|i| self.list.get(*i).unwrap()).collect();
-        
+
         Some(v)
     }
 }
@@ -153,9 +176,9 @@ impl<'a, Element, Collection> IntoIterator for &'a mut NamedObjectsContainer<Ele
 // Clone
 //-----------------------------------------------------------------------
 impl<Element: Nameable + Clone, Collection> Clone for NamedObjectsContainer<Element, Collection>
- where 
-    HashMap<String,Collection>: Insertable {
-
+where
+    HashMap<String, Collection>: Insertable,
+{
     fn clone(&self) -> Self {
         let mut cloned = NamedObjectsContainer::<Element, Collection>::new();
 
@@ -170,10 +193,11 @@ impl<Element: Nameable + Clone, Collection> Clone for NamedObjectsContainer<Elem
 //-----------------------------------------------------------------------
 // From
 //-----------------------------------------------------------------------
-impl<'a, Element: Nameable, Collection> From<Vec<Element>> for NamedObjectsContainer<Element, Collection>
- where 
-    HashMap<String,Collection>: Insertable {
-    
+impl<'a, Element: Nameable, Collection> From<Vec<Element>>
+    for NamedObjectsContainer<Element, Collection>
+where
+    HashMap<String, Collection>: Insertable,
+{
     fn from(v: Vec<Element>) -> Self {
         let mut container = NamedObjectsContainer::<Element, Collection>::new();
 
@@ -186,9 +210,10 @@ impl<'a, Element: Nameable, Collection> From<Vec<Element>> for NamedObjectsConta
 }
 
 // type aliases
-pub type UniqueNamedObjectsContainer<T> = NamedObjectsContainer<T, usize>;
-pub type UNOC<T> = UniqueNamedObjectsContainer<T>;
+pub type UniqueNamedObjectsContainer<Element> = NamedObjectsContainer<Element, usize>;
+pub type UNOC<Element> = UniqueNamedObjectsContainer<Element>;
 
-pub type DuplicateNamedObjectsContainer<T> = NamedObjectsContainer<T, Vec<usize>>;
-pub type DNOC<T> = DuplicateNamedObjectsContainer<T>;
+pub type DuplicateNamedObjectsContainer<Element> = NamedObjectsContainer<Element, Vec<usize>>;
+pub type DNOC<Element> = DuplicateNamedObjectsContainer<Element>;
 
+//pub type Test<T> = NamedObjectsContainer<Wrapped<T>, usize>;
