@@ -5,15 +5,15 @@
 //! the name is need when pushing an element.
 //! # Examples
 use std::collections::HashMap;
-
 use std::fmt;
 use std::ops::{Index, IndexMut};
 use std::slice::{Iter, IterMut};
 
-use adjustable::{Adjustable};
+use adjustable::Adjustable;
 use nameable::Nameable;
 
 // As names could ne duplicated, it might be useful to define a unique name.
+#[derive(Debug, Clone)]
 pub struct ElementName {
     pub original_name: String,
     pub unique_name: Option<String>,
@@ -59,7 +59,7 @@ where
     /// noc.push_with_name("Hydrogen", Atom{ p:1, n:1 });
     /// assert!(noc.contains_name("Hydrogen"));
     /// assert!(!noc.contains_name("Helium"));
-    /// ```    
+    /// ```
     pub fn contains_name(&self, name: &str) -> bool {
         self.hmap.contains_key(name)
     }
@@ -84,7 +84,7 @@ where
     /// noc.push_with_name("Hydrogen", Atom{ p:1, n:1 });
     /// noc.push_with_name("Helium", Atom{ p:2, n:2 });
     /// assert_eq!(noc.get(0).unwrap().p,1);
-    /// ```     
+    /// ```
     pub fn get(&self, index: usize) -> Option<&Element> {
         self.list.get(index)
     }
@@ -102,7 +102,7 @@ where
     /// noc.push_with_name("Hydrogen", Atom{ p:1, n:1 });
     /// noc.push_with_name("Helium", Atom{ p:2, n:2 });
     /// assert_eq!(noc.len(),2);
-    /// ```      
+    /// ```
     pub fn len(&self) -> usize {
         self.list.len()
     }
@@ -119,18 +119,18 @@ where
     ///
     /// water.push_with_name("Hydrogen", Atom{ p:1, n:1 });
     /// water.push_with_name("Hydrogen", Atom{ p:1, n:1 });
-    /// water.push_with_name("Oxygen", Atom{ p:8, n:8 });    
+    /// water.push_with_name("Oxygen", Atom{ p:8, n:8 });
     ///
     /// let mut iterator = water.iter();
-    /// 
+    ///
     /// assert_eq!(iterator.next().unwrap().p, 1);
     /// assert_eq!(iterator.next().unwrap().p, 1);
     /// assert_eq!(iterator.next().unwrap().p, 8);
-    /// ```    
+    /// ```
     pub fn iter(&self) -> Iter<Element> {
         self.list.iter()
     }
-    
+
     pub fn iter_mut(&mut self) -> IterMut<Element> {
         self.list.iter_mut()
     }
@@ -170,13 +170,13 @@ where
     ///
     /// struct Atom { name: String, p: u8, n: u8, };
     /// impl noc::nameable::Nameable for Atom {
-    ///     fn get_name(&self) -> &str { &self.name }  
+    ///     fn get_name(&self) -> &str { &self.name }
     /// }
     /// let mut noc = UNOC::<Atom>::new();
     ///
     /// noc.push(Atom{ name: "Hydrogen".to_string(), p:1, n:1 });
     /// noc.push(Atom{ name: "Helium".to_string(), p:2, n:2 });
-    /// ```     
+    /// ```
     pub fn push(&mut self, element: Element)
     where
         Element: Nameable,
@@ -217,7 +217,7 @@ where
     ///
     /// noc.push_with_name("Hydrogen", Atom{ p:1, n:1 });
     /// noc.push_with_name("Helium", Atom{ p:2, n:2 });
-    /// ``` 
+    /// ```
     pub fn push_with_name(&mut self, name: &str, element: Element) {
         // add element
         self.list.push(element);
@@ -241,7 +241,7 @@ where
     ///
     /// # Panics
     ///
-    /// Panics if `index` is out of bounds.   
+    /// Panics if `index` is out of bounds.
     ///
     /// # Examples
     ///
@@ -257,7 +257,7 @@ where
     ///
     /// noc.remove(5);
     /// assert_eq!(noc.len(),9);
-    /// ``` 
+    /// ```
     pub fn remove(&mut self, index: usize) -> Element {
         // delete from main list
         let e = self.list.remove(index);
@@ -310,21 +310,50 @@ where
     /// noc.push_with_name("Hydrogen", Atom{ p:1, n:1 });
     /// noc.push_with_name("Helium", Atom{ p:2, n:2 });
     /// assert_eq!(noc.get_name(1).unwrap().original_name, "Helium");
-    /// ``` 
+    /// ```
     pub fn get_name(&self, index: usize) -> Option<&ElementName> {
         self.name_list.get(index)
     }
 
+    /*
+    pub fn check(&self) -> bool {
+        let n1 = self.list.len();
+
+        let mut n2 = 0;
+        for (k, v) in self.hmap {
+
+        }
+        let n2 = self.hamp
+    }*/
 }
 
 //-----------------------------------------------------------------------
-// specilizations
+// Specializations
 //-----------------------------------------------------------------------
 
-// in that case, need to find out...
 impl<Element> NamedObjectsCollection<Element, Vec<usize>> {
-
-
+    /// Returns a vector of elements having the same name.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use noc::noc::DNOC;
+    ///
+    /// struct Atom { p: u8, n: u8, };
+    /// let mut water = DNOC::<Atom>::new();
+    ///
+    /// water.push_with_name("Hydrogen", Atom{ p:1, n:1 });
+    /// water.push_with_name("Hydrogen", Atom{ p:1, n:1 });
+    /// water.push_with_name("Oxygen", Atom{ p:8, n:8 });
+    ///
+    /// let mut v = water.get_by_name("Hydrogen").unwrap();
+    ///
+    /// assert_eq!(v[0].p, 1);
+    /// assert_eq!(v[0].n, 1);
+    /// assert_eq!(v[1].p, 1);
+    /// assert_eq!(v[1].n, 1);
+    /// assert!(water.get_by_name("Helium").is_none());
+    /// ```
     pub fn get_by_name(&self, name: &str) -> Option<Vec<&Element>> {
         if !self.hmap.contains_key(name) {
             return None;
@@ -337,16 +366,33 @@ impl<Element> NamedObjectsCollection<Element, Vec<usize>> {
     }
 }
 
-
 //-----------------------------------------------------------------------
 // Traits implementations
-//-----------------------------------------------------------------------
-//-----------------------------------------------------------------------
-// [] access
 //-----------------------------------------------------------------------
 impl<Element, Indexes> Index<usize> for NamedObjectsCollection<Element, Indexes> {
     type Output = Element;
 
+    /// Get access to an element by providing its index in the collection.
+    ///
+    /// # Arguments
+    /// * `index` - Element index.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `index` is out of bounds.
+    ///
+    /// # Examples
+    /// ```
+    /// use noc::noc::UNOC;
+    ///
+    /// struct Atom { p: u8, n: u8, };
+    /// let mut noc = UNOC::<Atom>::new();
+    ///
+    /// noc.push_with_name("Hydrogen", Atom{ p:1, n:1 });
+    /// noc.push_with_name("Helium", Atom{ p:2, n:2 });
+    /// assert_eq!(noc[1].p, 2);
+    /// assert_eq!(noc[1].n, 2);
+    /// ```
     fn index(&self, index: usize) -> &Self::Output {
         // get reference on vector of items
         self.list.get(index).unwrap()
@@ -390,7 +436,7 @@ impl<'a, Element, Indexes> IntoIterator for &'a mut NamedObjectsCollection<Eleme
 //-----------------------------------------------------------------------
 // Clone
 //-----------------------------------------------------------------------
-impl<Element: Nameable + Clone, Indexes> Clone for NamedObjectsCollection<Element, Indexes>
+impl<Element: Clone, Indexes> Clone for NamedObjectsCollection<Element, Indexes>
 where
     HashMap<String, Indexes>: Adjustable,
 {
@@ -398,8 +444,8 @@ where
         let mut cloned = NamedObjectsCollection::<Element, Indexes>::new();
 
         // copy other fields which can be potentially already set
-        for element in self {
-            cloned.push(element.clone());
+        for (i, element) in self.iter().enumerate() {
+            cloned.push_with_name(&self.name_list[i].original_name, element.clone());
         }
         cloned
     }
@@ -408,8 +454,7 @@ where
 //-----------------------------------------------------------------------
 // From
 //-----------------------------------------------------------------------
-impl<'a, Element: Nameable, Indexes> From<Vec<Element>>
-    for NamedObjectsCollection<Element, Indexes>
+impl<'a, Element: Nameable, Indexes> From<Vec<Element>> for NamedObjectsCollection<Element, Indexes>
 where
     HashMap<String, Indexes>: Adjustable,
 {
@@ -437,6 +482,23 @@ where
         }
 
         container
+    }
+}
+
+//-----------------------------------------------------------------------
+// Debug
+//-----------------------------------------------------------------------
+impl<Element: Nameable + fmt::Debug, Indexes: fmt::Debug> fmt::Debug
+    for NamedObjectsCollection<Element, Indexes>
+where
+    HashMap<String, Indexes>: Adjustable,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut s = format!("list: {:?}\n", self.list);
+        s += &format!("hmap: {:?}\n", self.hmap);
+        s += &format!("name_list: {:?}\n", self.name_list);
+
+        write!(f, "{}", s)
     }
 }
 
