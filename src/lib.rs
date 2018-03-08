@@ -40,27 +40,19 @@ mod setup {
 
     // setup data ctors for tests
     pub fn build_with_name(n: usize) -> Vec<WithName> {
-        let mut v = Vec::new();
-
-        for i in 0..n {
-            v.push(WithName {
+        (0..n)
+            .map(|i| WithName {
                 name: format!("NAME{}", i),
                 x: i,
                 y: i,
-            });
-        }
-
-        v
+            })
+            .collect()
     }
 
     pub fn build_without_name(n: usize) -> Vec<(String, WithoutName)> {
-        let mut v = Vec::new();
-
-        for i in 0..n {
-            v.push((format!("NAME{}", i), WithoutName { x: i, y: i }));
-        }
-
-        v
+        (0..n)
+            .map(|i| (format!("NAME{}", i), WithoutName { x: i, y: i }))
+            .collect()
     }
 
 }
@@ -88,7 +80,7 @@ mod tests {
         //---------------------------------------------------------------------------
         // From trait
         //---------------------------------------------------------------------------
-        let mut noc = UNOC::<WithName>::from(v1);
+        noc = UNOC::<WithName>::from(v1);
 
         for i in 0..100 {
             let s = &noc[i];

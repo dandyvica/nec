@@ -3,6 +3,7 @@ use std::collections::HashMap;
 pub trait Adjustable {
     fn add_entry(&mut self, name: &str, index: usize);
     fn remove_entry(&mut self, name: &str, index: usize);
+    fn replace_entry(&mut self, name: &str, index: usize);
 }
 impl Adjustable for HashMap<String, usize> {
     fn add_entry(&mut self, name: &str, index: usize) {
@@ -11,6 +12,10 @@ impl Adjustable for HashMap<String, usize> {
 
     fn remove_entry(&mut self, name: &str, _index: usize) {
         self.remove(name);
+    }
+
+    fn replace_entry(&mut self, name: &str, index: usize) {
+        self.insert(name.to_string(), index);
     }
 }
 impl Adjustable for HashMap<String, Vec<usize>> {
@@ -29,5 +34,9 @@ impl Adjustable for HashMap<String, Vec<usize>> {
         if self.get(name).unwrap().is_empty() {
             self.remove(name);
         }
+    }
+
+    fn replace_entry(&mut self, name: &str, index: usize) {
+        //self.insert(name.to_string(), index);
     }
 }
