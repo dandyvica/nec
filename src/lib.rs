@@ -25,62 +25,38 @@ mod setup {
         pub y: usize,
     }
 
-    pub fn build_unoc_data<E, V, F>(n: usize, create: F) -> Vec<V>
-    where
-        F: Fn(usize) -> V,
-    {
-        let mut v = Vec::new();
-
-        for i in 0..n {
-            v.push(create(i));
-        }
-
-        v
-    }
-
-    // setup data ctors for tests
-    pub fn build_with_name(n: usize) -> Vec<WithName> {
-        (0..n)
-            .map(|i| WithName {
-                name: format!("NAME{}", i),
-                x: i,
-                y: i,
-            })
-            .collect()
-    }
-
-    pub fn build_without_name(n: usize) -> Vec<(String, WithoutName)> {
-        (0..n)
-            .map(|i| (format!("NAME{}", i), WithoutName { x: i, y: i }))
-            .collect()
-    }
-
 }
 
 #[cfg(test)]
 mod tests {
 
-    use noc::{DNOC, UNOC};
-    use setup::{build_with_name, build_without_name, WithName, WithoutName};
+    use noc::{DNEC, UNEC};
+    use setup::{WithName, WithoutName};
 
     //use adjustable::Adjustable;
-    use nameable::Nameable;
+    //use nameable::Nameable;
 
     // generic setup function for data, either with or without name
     #[test]
     fn test_unoc() {
         // build test data
-        let v1 = build_with_name(100);
+        let v1: Vec<_> = (0..100)
+            .map(|i| WithName {
+                name: format!("NAME{}", i),
+                x: i,
+                y: i,
+            })
+            .collect();
 
         // initial test
-        let mut noc = UNOC::<WithName>::new();
+        let mut noc = UNEC::<WithName>::new();
         assert_eq!(noc.len(), 0);
         assert!(noc.get(0).is_none());
 
         //---------------------------------------------------------------------------
         // From trait
         //---------------------------------------------------------------------------
-        noc = UNOC::<WithName>::from(v1);
+        noc = UNEC::<WithName>::from(v1);
 
         for i in 0..100 {
             let s = &noc[i];
@@ -128,7 +104,7 @@ mod tests {
         assert!(noc.contains_name("NAME5"));
         assert!(!noc.contains_name("NAME100"));
 
-        assert_eq!(noc.get_name(10).unwrap().original_name, "NAME10");
+        assert_eq!(noc.get_name(10).unwrap(), "NAME10");
 
         //---------------------------------------------------------------------------
         // clone
@@ -171,7 +147,7 @@ mod tests {
     #[test]
     fn test_dnoc() {
         // initial test
-        let mut noc = DNOC::<WithoutName>::new();
+        let mut noc = DNEC::<WithoutName>::new();
         assert_eq!(noc.len(), 0);
         assert!(noc.get(0).is_none());
 
@@ -225,7 +201,7 @@ mod tests {
         assert!(noc.contains_name("B"));
         assert!(!noc.contains_name("C"));
 
-        assert_eq!(noc.get_name(10).unwrap().original_name, "A");
+        assert_eq!(noc.get_name(10).unwrap(), "A");
 
         //---------------------------------------------------------------------------
         // clone
@@ -251,7 +227,7 @@ mod tests {
         // indexes
         //---------------------------------------------------------------------------
         {
-            let mut element50_name = noc.get_name(50).unwrap().original_name.clone();
+            let element50_name = noc.get_name(50).unwrap().clone();
             assert_eq!(&element50_name, "B");
         }
 
