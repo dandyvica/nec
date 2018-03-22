@@ -105,37 +105,66 @@ impl Adjustable for HashMap<String, Vec<usize>> {
     /// use nec::adjustable::Adjustable;
     ///
     /// let mut h: HashMap<String, Vec<usize>> = HashMap::new();
+    /// 
+    /// // set a specific data set for testing:
+    /// // 0 1 2 3 4 5 6 7 8 9
+    /// // A B A A B A A B B A
+    /// 
+    /// h.insert("A".to_string(), vec![0,2,3,5,6,9]);
+    /// h.insert("B".to_string(), vec![1,4,7,8]);
     ///
-    /// for i in 0..3 {
-    ///     for j in 0..3 {
-    ///         h.add_entry(&format!("NAME{}",i), j);
-    ///     }
-    /// }
-    ///
-    /// h.remove_entry("NAME0",0);
-    /// assert_eq!(h.get("NAME0").unwrap(), &vec![1,2]);
-    ///
-    /// h.remove_entry("NAME1",1);
-    /// assert_eq!(h.get("NAME1").unwrap(), &vec![0,2]);
-    ///
-    /// h.remove_entry("NAME2",2);
-    /// assert_eq!(h.get("NAME2").unwrap(), &vec![0,1]);
-    ///
-    /// h.remove_entry("NAME2",1);
-    /// assert_eq!(h.get("NAME2").unwrap(), &vec![0]);
-    ///
-    /// // no more key after this call
-    /// h.remove_entry("NAME2",0);
-    /// assert!(!h.contains_key("NAME2"));
-    ///
+    /// h.remove_entry("A",0);
+    /// assert_eq!(h.get("A").unwrap(), &vec![1,2,4,5,8]);
+    /// assert_eq!(h.get("B").unwrap(), &vec![0,3,6,7]);
+    /// 
+    /// h.remove_entry("A",2);
+    /// assert_eq!(h.get("A").unwrap(), &vec![1,3,4,7]);
+    /// assert_eq!(h.get("B").unwrap(), &vec![0,2,5,6]);
+    /// 
+    /// h.remove_entry("A",7);
+    /// assert_eq!(h.get("A").unwrap(), &vec![1,3,4]);
+    /// assert_eq!(h.get("B").unwrap(), &vec![0,2,5,6]);
+    /// 
+    /// h.remove_entry("A",3);
+    /// assert_eq!(h.get("A").unwrap(), &vec![1,3]);
+    /// assert_eq!(h.get("B").unwrap(), &vec![0,2,4,5]);
+    /// 
+    /// h.remove_entry("A",1);
+    /// assert_eq!(h.get("A").unwrap(), &vec![2]);
+    /// assert_eq!(h.get("B").unwrap(), &vec![0,1,3,4]);
+    /// 
+    /// h.remove_entry("A",2);
+    /// assert!(!h.contains_key("A"));
+    /// assert_eq!(h.get("B").unwrap(), &vec![0,1,2,3]);
+    /// 
+    /// h.remove_entry("B",0);
+    /// assert_eq!(h.get("B").unwrap(), &vec![0,1,2]);
+    /// 
+    /// h.remove_entry("B",2);
+    /// assert_eq!(h.get("B").unwrap(), &vec![0,1]);
+    /// 
+    /// h.remove_entry("B",0);
+    /// assert_eq!(h.get("B").unwrap(), &vec![0]);
+    /// 
+    /// h.remove_entry("B",0);
+    /// assert!(!h.contains_key("B"));
     /// ```
     fn remove_entry(&mut self, name: &str, index: usize) {
-        let i = self.get_mut(name).unwrap().remove(index);
-        assert_eq!(index, i);
+        // remove the index from list of indexes. Don't use remove_item() fn for the moment
+        self.get_mut(name).unwrap().retain(|&i| i != index);
 
         // if not more indexes, remove key
         if self.get(name).unwrap().is_empty() {
             self.remove(name);
+        }
+
+        // for all indexes above, we need to remove 1
+        for v in self.values_mut() {
+            for j in v {
+                if *j > index {
+                    *j -= 1;
+                }
+            }
         }
     }
 

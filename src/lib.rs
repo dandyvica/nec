@@ -224,12 +224,23 @@ mod tests {
         assert!(!names.contains(&"C".to_string()));
 
         //---------------------------------------------------------------------------
-        // indexes
+        // get_name()
         //---------------------------------------------------------------------------
         {
             let element50_name = nec.get_name(50).unwrap().clone();
             assert_eq!(&element50_name, "B");
         }
+
+        //---------------------------------------------------------------------------
+        // remove
+        //---------------------------------------------------------------------------
+        assert_eq!(nec.get_name(49).unwrap(), "A");
+        nec.remove(0);
+        assert_eq!(nec.len(), 99);
+
+        // test several locations
+        assert_eq!(nec.get_name(0).unwrap(), "A");
+        assert_eq!(nec.get_name(49).unwrap(), "B");
 
         //---------------------------------------------------------------------------
         // clear
