@@ -7,7 +7,6 @@
 //! 
 //! # Examples
 //! ```
-//! ```
 //! use nec::nec::DNEC;
 //!
 //! struct Atom { proton: u8, neutron: u8, };
@@ -16,6 +15,20 @@
 //! water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
 //! water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
 //! water.push_with_name("Oxygen", Atom{ proton:8, neutron:8 });
+//! 
+//! assert_eq!(water.get_by_name("Hydrogen").unwrap().len(), 2);
+//! ```
+//! ```
+//! use nec::nec::UNEC;
+//!
+//! struct Atom { proton: u8, neutron: u8, };
+//! let mut water = UNEC::<Atom>::new();
+//!
+//! water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
+//! water.push_with_name("Hydrogen", Atom{ proton:1, neutron:1 });
+//! water.push_with_name("Oxygen", Atom{ proton:8, neutron:8 });
+//! 
+//! assert_eq!(water.len(), 2);
 //! ```
 
 use std::collections::HashMap;
