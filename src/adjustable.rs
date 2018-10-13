@@ -4,7 +4,7 @@ use std::collections::HashMap;
 /// names are self-explanatory.
 pub trait Adjustable {
     fn add_entry(&mut self, name: &str, index: usize);
-    fn remove_entry(&mut self, name: &str, index: usize);
+    fn delete_entry(&mut self, name: &str, index: usize);
     fn replace_entry(&mut self, name: &str, index: usize);
 }
 
@@ -40,10 +40,10 @@ impl Adjustable for HashMap<String, usize> {
     ///     h.add_entry(&format!("NAME{}",i), i);
     /// }
     ///
-    /// h.remove_entry("NAME5", 5);
+    /// h.delete_entry("NAME5", 5);
     /// assert_eq!(h.keys().len(), 9);
     /// ```
-    fn remove_entry(&mut self, name: &str, _index: usize) {
+    fn delete_entry(&mut self, name: &str, _index: usize) {
         self.remove(name);
     }
 
@@ -113,43 +113,43 @@ impl Adjustable for HashMap<String, Vec<usize>> {
     /// h.insert("A".to_string(), vec![0,2,3,5,6,9]);
     /// h.insert("B".to_string(), vec![1,4,7,8]);
     ///
-    /// h.remove_entry("A",0);
+    /// h.delete_entry("A",0);
     /// assert_eq!(h.get("A").unwrap(), &vec![1,2,4,5,8]);
     /// assert_eq!(h.get("B").unwrap(), &vec![0,3,6,7]);
     /// 
-    /// h.remove_entry("A",2);
+    /// h.delete_entry("A",2);
     /// assert_eq!(h.get("A").unwrap(), &vec![1,3,4,7]);
     /// assert_eq!(h.get("B").unwrap(), &vec![0,2,5,6]);
     /// 
-    /// h.remove_entry("A",7);
+    /// h.delete_entry("A",7);
     /// assert_eq!(h.get("A").unwrap(), &vec![1,3,4]);
     /// assert_eq!(h.get("B").unwrap(), &vec![0,2,5,6]);
     /// 
-    /// h.remove_entry("A",3);
+    /// h.delete_entry("A",3);
     /// assert_eq!(h.get("A").unwrap(), &vec![1,3]);
     /// assert_eq!(h.get("B").unwrap(), &vec![0,2,4,5]);
     /// 
-    /// h.remove_entry("A",1);
+    /// h.delete_entry("A",1);
     /// assert_eq!(h.get("A").unwrap(), &vec![2]);
     /// assert_eq!(h.get("B").unwrap(), &vec![0,1,3,4]);
     /// 
-    /// h.remove_entry("A",2);
+    /// h.delete_entry("A",2);
     /// assert!(!h.contains_key("A"));
     /// assert_eq!(h.get("B").unwrap(), &vec![0,1,2,3]);
     /// 
-    /// h.remove_entry("B",0);
+    /// h.delete_entry("B",0);
     /// assert_eq!(h.get("B").unwrap(), &vec![0,1,2]);
     /// 
-    /// h.remove_entry("B",2);
+    /// h.delete_entry("B",2);
     /// assert_eq!(h.get("B").unwrap(), &vec![0,1]);
     /// 
-    /// h.remove_entry("B",0);
+    /// h.delete_entry("B",0);
     /// assert_eq!(h.get("B").unwrap(), &vec![0]);
     /// 
-    /// h.remove_entry("B",0);
+    /// h.delete_entry("B",0);
     /// assert!(!h.contains_key("B"));
     /// ```
-    fn remove_entry(&mut self, name: &str, index: usize) {
+    fn delete_entry(&mut self, name: &str, index: usize) {
         // remove the index from list of indexes. Don't use remove_item() fn for the moment
         self.get_mut(name).unwrap().retain(|&i| i != index);
 

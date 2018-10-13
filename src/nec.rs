@@ -25,7 +25,7 @@
 //! let mut water = UNEC::<Atom>::new();
 //!
 //! water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-//! water.push_with_name("Hydrogen", Atom{ proton:1, neutron:1 });
+//! water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
 //! water.push_with_name("Oxygen", Atom{ proton:8, neutron:8 });
 //! 
 //! assert_eq!(water.len(), 2);
@@ -75,7 +75,10 @@ where
     /// Creates a new empty collection of named elements.
     pub fn new() -> NamedElementsCollection<Element, Indexes> {
         NamedElementsCollection {
+            // list is a vector of elements
             list: Vec::new(),
+
+            // hmap is a hashmap of indexes of the list elements
             hmap: HashMap::new(),
         }
     }
@@ -359,7 +362,7 @@ where
 
         // remove relevant indexes from hashmap
         let name = self.list.get(index).unwrap().name.0.clone();
-        self.hmap.remove_entry(&name, index);
+        self.hmap.delete_entry(&name, index);
 
         e
     }
