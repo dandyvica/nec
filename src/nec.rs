@@ -2,8 +2,7 @@
 //! It mimics the `Vector` collection, but with the ability to retrieve an element by its name.
 //!
 //! Element names could also be duplicated, and getting an element providing its name could possibly return several elements.
-//! If the `Element` type implements the `Nameable` trait, it's not necessary to provide the element's name. If not,
-//! the name should be provided when pushing an element into the collection.
+//! The name should be provided when pushing an element into the collection.
 //! 
 //! # Examples
 //! ```
@@ -12,9 +11,9 @@
 //! struct Atom { proton: u8, neutron: u8, };
 //! let mut water = DNEC::<Atom>::new();
 //!
-//! water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-//! water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-//! water.push_with_name("Oxygen", Atom{ proton:8, neutron:8 });
+//! water.push("Hydrogen", Atom{ proton:1, neutron:0 });
+//! water.push("Hydrogen", Atom{ proton:1, neutron:0 });
+//! water.push("Oxygen", Atom{ proton:8, neutron:8 });
 //! 
 //! assert_eq!(water.get_by_name("Hydrogen").unwrap().len(), 2);
 //! ```
@@ -24,9 +23,9 @@
 //! struct Atom { proton: u8, neutron: u8, };
 //! let mut water = UNEC::<Atom>::new();
 //!
-//! water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-//! water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-//! water.push_with_name("Oxygen", Atom{ proton:8, neutron:8 });
+//! water.push("Hydrogen", Atom{ proton:1, neutron:0 });
+//! water.push("Hydrogen", Atom{ proton:1, neutron:0 });
+//! water.push("Oxygen", Atom{ proton:8, neutron:8 });
 //! 
 //! assert_eq!(water.len(), 2);
 //! ```
@@ -38,7 +37,6 @@ use std::ops::{Index, IndexMut};
 use std::slice::{Iter, IterMut};
 
 use adjustable::Adjustable;
-use nameable::Nameable;
 
 /// Encompassing structure for storing not only the element object, by also its connected data: its original name
 /// and a possible unique name which can be defined in case of duplicated elements. This unique name
@@ -46,9 +44,9 @@ use nameable::Nameable;
 #[derive(Debug, Clone)]
 pub struct ElementBundle<Element> {
     // keep element inside this struct
-    elem: Element,
+    pub elem: Element,
     // keep its original name and its alternate unique name if any
-    name: (String, Option<String>),
+    pub name: String,
 }
 
 /// Just a trick to restrict the list of admissible type for `Indexes` type parameter below.
@@ -59,7 +57,7 @@ impl Indexable for Vec<usize> {}
 /// Named elements collection. The `Indexes` type parameter could either by a simple `usize` index in case of non-duplicated elements,
 /// or a `Vec<usize>` for storing elements having the same name. The `Indexable` trait bound is used to restrict the set
 /// of admissible types: `usize` or `Vec<usize>`.
-#[derive(Clone)]
+//#[derive(Clone)]
 pub struct NamedElementsCollection<Element, Indexes: Indexable> {
     /// List of Element structs
     list: Vec<ElementBundle<Element>>,
@@ -96,7 +94,7 @@ where
     /// struct Atom { proton: u8, neutron: u8, };
     /// let mut molecule = UNEC::<Atom>::new();
     ///
-    /// molecule.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// molecule.push("Hydrogen", Atom{ proton:1, neutron:0 });
     /// assert!(molecule.contains_name("Hydrogen"));
     /// assert!(!molecule.contains_name("Helium"));
     /// ```
@@ -121,15 +119,12 @@ where
     /// struct Atom { proton: u8, neutron: u8, };
     /// let mut molecule = UNEC::<Atom>::new();
     ///
-    /// molecule.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// molecule.push_with_name("Helium", Atom{ proton:2, neutron:2 });
-    /// assert_eq!(molecule.get(0).unwrap().proton,1);
+    /// molecule.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// molecule.push("Helium", Atom{ proton:2, neutron:2 });
+    /// assert_eq!(molecule.get(0).unwrap().elem.proton,1);
     /// ```
-    pub fn get(&self, index: usize) -> Option<&Element> {
-        match self.list.get(index) {
-            Some(v) => Some(&v.elem),
-            None => None,
-        }
+    pub fn get(&self, index: usize) -> Option<&ElementBundle<Element>> {
+        self.list.get(index)
     }
 
     /// Returns the mutable reference on the element corresponding to `index`.
@@ -149,15 +144,12 @@ where
     /// struct Atom { proton: u8, neutron: u8, };
     /// let mut molecule = UNEC::<Atom>::new();
     ///
-    /// molecule.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// molecule.push_with_name("Helium", Atom{ proton:2, neutron:2 });
-    /// assert_eq!(molecule.get(0).unwrap().proton,1);
+    /// molecule.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// molecule.push("Helium", Atom{ proton:2, neutron:2 });
+    /// assert_eq!(molecule.get(0).unwrap().elem.proton,1);
     /// ```
-    pub fn get_mut(&mut self, index: usize) -> Option<&mut Element> {
-        match self.list.get_mut(index) {
-            Some(v) => Some(&mut v.elem),
-            None => None,
-        }
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut ElementBundle<Element>> {
+        self.list.get_mut(index)
     }
 
     /// Returns the number of elements in the collection.
@@ -170,8 +162,8 @@ where
     /// struct Atom { proton: u8, neutron: u8, };
     /// let mut molecule = UNEC::<Atom>::new();
     ///
-    /// molecule.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// molecule.push_with_name("Helium", Atom{ proton:2, neutron:2 });
+    /// molecule.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// molecule.push("Helium", Atom{ proton:2, neutron:2 });
     /// assert_eq!(molecule.len(),2);
     /// ```
     pub fn len(&self) -> usize {
@@ -188,11 +180,11 @@ where
     /// struct Atom { proton: u8, neutron: u8, };
     /// let mut molecule = UNEC::<Atom>::new();
     ///
-    /// molecule.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// molecule.push("Hydrogen", Atom{ proton:1, neutron:0 });
     /// assert!(!molecule.is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.list.is_empty()
     }
 
     /// Returns an iterator over the collection.
@@ -205,15 +197,15 @@ where
     /// struct Atom { proton: u8, neutron: u8, };
     /// let mut water = DNEC::<Atom>::new();
     ///
-    /// water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// water.push_with_name("Oxygen", Atom{ proton:8, neutron:8 });
+    /// water.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// water.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// water.push("Oxygen", Atom{ proton:8, neutron:8 });
     ///
     /// let mut iter = water.iter();
     ///
-    /// assert_eq!(iter.next().unwrap().proton, 1);
-    /// assert_eq!(iter.next().unwrap().proton, 1);
-    /// assert_eq!(iter.next().unwrap().proton, 8);
+    /// assert_eq!(iter.next().unwrap().elem.proton, 1);
+    /// assert_eq!(iter.next().unwrap().elem.proton, 1);
+    /// assert_eq!(iter.next().unwrap().elem.proton, 8);
     /// ```
     pub fn iter(&self) -> NecIter<Element> {
         self.into_iter()
@@ -229,16 +221,16 @@ where
     /// struct Atom { proton: u8, neutron: u8, };
     /// let mut water = DNEC::<Atom>::new();
     ///
-    /// water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// water.push_with_name("Oxygen", Atom{ proton:7, neutron:7 });
+    /// water.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// water.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// water.push("Oxygen", Atom{ proton:7, neutron:7 });
     ///
     /// let mut iter = water.iter_mut().skip(2);
     /// let mut oxygen = iter.next().unwrap();
     ///
     /// // fix error on number of protons & neutrons
-    /// oxygen.proton = 8;
-    /// oxygen.neutron = 8;
+    /// oxygen.elem.proton = 8;
+    /// oxygen.elem.neutron = 8;
     /// ```
     pub fn iter_mut(&mut self) -> NecIterMut<Element> {
         self.into_iter()
@@ -254,8 +246,8 @@ where
     /// struct Atom { proton: u8, neutron: u8, };
     /// let mut molecule = UNEC::<Atom>::new();
     ///
-    /// molecule.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// molecule.push_with_name("Helium", Atom{ proton:2, neutron:2 });
+    /// molecule.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// molecule.push("Helium", Atom{ proton:2, neutron:2 });
     ///
     /// molecule.clear();
     /// assert_eq!(molecule.len(),0);
@@ -263,73 +255,6 @@ where
     pub fn clear(&mut self) {
         self.list.clear();
         self.hmap.clear();
-    }
-
-    /// Adds an item at the end of the collection. In this case, as the `Element` type implements the `Nameable` trait,
-    /// the element's name is provided by calling the trait's method `get_name()`.
-    ///
-    /// # Arguments
-    /// * `element` - Element structure
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use nec::nec::UNEC;
-    ///
-    /// struct Atom { name: String, proton: u8, neutron: u8, };
-    /// impl nec::nameable::Nameable for Atom {
-    ///     fn get_name(&self) -> &str { &self.name }
-    /// }
-    /// let mut molecule = UNEC::<Atom>::new();
-    ///
-    /// molecule.push(Atom{ name: "Hydrogen".to_string(), proton:1, neutron:0 });
-    /// molecule.push(Atom{ name: "Helium".to_string(), proton:2, neutron:2 });
-    /// ```
-    pub fn push(&mut self, element: Element)
-    where
-        Element: Nameable,
-    {
-        // move element in the list handling elements
-        let name = String::from(element.get_name());
-
-        // add the index of the new element in the HashMap
-        self.hmap.add_entry(&name, self.list.len());
-
-        // then push at the end of the collection
-        self.list.push(ElementBundle {
-            elem: element,
-            name: (name, None),
-        });
-    }
-
-    /// Adds an item at the end of the collection. In this case,  as the `Element` type doesn't implement the `Nameable` trait,
-    /// the caller must provide the element's name.
-    ///
-    /// # Arguments
-    /// * `name` - Element's name
-    /// * `element` - Element structure
-    ///
-    /// # Examples
-    ///
-    /// ```norun
-    /// use nec::nec::UNEC;
-    ///
-    /// struct Atom { proton: u8, neutron: u8, };
-    /// let mut molecule = UNEC::<Atom>::new();
-    ///
-    /// molecule.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// molecule.push_with_name("Helium", Atom{ proton:2, neutron:2 });
-    /// ```
-    fn _push_with_name(&mut self, name: &str, element: Element) {
-        // add element
-        self.list.push(ElementBundle {
-            elem: element,
-            name: (String::from(name), None),
-        });
-
-        // add index in the hash
-        let index = self.list.len() - 1;
-        self.hmap.add_entry(name, index);
     }
 
     /// Removes an element from the collection by providing its index.
@@ -350,7 +275,7 @@ where
     /// let mut molecule = UNEC::<Atom>::new();
     ///
     /// for i in 0..10 {
-    ///     molecule.push_with_name(&format!("Atom{}",i), Atom{ proton:i, neutron:i });
+    ///     molecule.push(&format!("Atom{}",i), Atom{ proton:i, neutron:i });
     /// }
     ///
     /// molecule.remove(5);
@@ -361,7 +286,7 @@ where
         let e = self.list.remove(index);
 
         // remove relevant indexes from hashmap
-        let name = self.list.get(index).unwrap().name.0.clone();
+        let name = self.list.get(index).unwrap().name.clone();
         self.hmap.delete_entry(&name, index);
 
         e
@@ -380,9 +305,9 @@ where
     /// struct Atom { proton: u8, neutron: u8, };
     /// let mut water = DNEC::<Atom>::new();
     ///
-    /// water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// water.push_with_name("Oxygen", Atom{ proton:8, neutron:8 });
+    /// water.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// water.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// water.push("Oxygen", Atom{ proton:8, neutron:8 });
     /// assert_eq!(water.names().len(), 2);
     /// ```
     pub fn names(&self) -> Vec<String> {
@@ -406,15 +331,27 @@ where
     /// struct Atom { proton: u8, neutron: u8, };
     /// let mut molecule = UNEC::<Atom>::new();
     ///
-    /// molecule.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// molecule.push_with_name("Helium", Atom{ proton:2, neutron:2 });
+    /// molecule.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// molecule.push("Helium", Atom{ proton:2, neutron:2 });
     /// assert_eq!(molecule.get_name(1).unwrap(), "Helium");
     /// ```
     pub fn get_name(&self, index: usize) -> Option<&String> {
         match self.list.get(index) {
-            Some(v) => Some(&v.name.0),
+            Some(v) => Some(&v.name),
             None => None,
         }
+    }
+
+    fn _push(&mut self, name: &str, element: Element) {
+        // add element
+        self.list.push(ElementBundle {
+            elem: element,
+            name: String::from(name),
+        });
+
+        // add index in the hash
+        let index = self.list.len() - 1;
+        self.hmap.add_entry(name, index);
     }
 }
 
@@ -422,8 +359,7 @@ where
 // Specializations
 //-----------------------------------------------------------------------
 impl<Element> NamedElementsCollection<Element, usize> {
-    /// Adds an item at the end of the collection. In this case, as the `Element` type doesn't implement the `Nameable` trait,
-    /// the caller must provide the name.
+    /// Adds an item at the end of the collection. 
     ///
     /// # Arguments
     /// * `name` - Element's name
@@ -438,19 +374,19 @@ impl<Element> NamedElementsCollection<Element, usize> {
     /// let mut molecule = UNEC::<Atom>::new();
     ///
     /// for i in 0..10_u8 {
-    ///     molecule.push_with_name(&format!("Atom{}",i), Atom{ proton:i, neutron:i });
+    ///     molecule.push(&format!("Atom{}",i), Atom{ proton:i, neutron:i });
     /// }
     ///
     /// for i in 0..10_u8 {
-    ///     molecule.push_with_name(&format!("Atom{}",i), Atom{ proton:i, neutron:i });
+    ///     molecule.push(&format!("Atom{}",i), Atom{ proton:i, neutron:i });
     /// }
     /// assert_eq!(molecule.len(), 10);
     ///
     /// for i in 0..10_u8 {
-    ///     assert_eq!(molecule[i as usize].proton, i);
+    ///     assert_eq!(molecule[i as usize].elem.proton, i);
     /// }
     /// ```
-    pub fn push_with_name(&mut self, name: &str, element: Element) {
+    pub fn push(&mut self, name: &str, element: Element) {
         // if name is already in our list, just replace the element
         if self.hmap.contains_key(name) {
             // get index of this element
@@ -459,7 +395,7 @@ impl<Element> NamedElementsCollection<Element, usize> {
             // and replace the element tuple
             self.list[index] = ElementBundle {
                 elem: element,
-                name: (String::from(name), None),
+                name: String::from(name),
             };
 
             // and also replace in hmap
@@ -467,14 +403,13 @@ impl<Element> NamedElementsCollection<Element, usize> {
         }
         // otherwise, business as usual
         else {
-            self._push_with_name(name, element);
+            self._push(name, element);
         }
     }
 }
 
 impl<Element> NamedElementsCollection<Element, Vec<usize>> {
-    /// Adds an item at the end of the collection. In this case, as the `Element` type doesn't implement the `Nameable` trait,
-    /// the caller must provide the name.
+    /// Adds an item at the end of the collection.
     ///
     /// # Arguments
     /// * `name` - Element's name
@@ -489,11 +424,11 @@ impl<Element> NamedElementsCollection<Element, Vec<usize>> {
     /// let mut molecule = DNEC::<Atom>::new();
     ///
     /// for i in 0..10_u8 {
-    ///     molecule.push_with_name(&format!("Atom{}",i), Atom{ proton:i, neutron:i });
+    ///     molecule.push(&format!("Atom{}",i), Atom{ proton:i, neutron:i });
     /// }
     ///
     /// for i in 0..10_u8 {
-    ///     molecule.push_with_name(&format!("Atom{}",i), Atom{ proton:i, neutron:i });
+    ///     molecule.push(&format!("Atom{}",i), Atom{ proton:i, neutron:i });
     /// }
     ///
     /// assert_eq!(molecule.len(), 20);
@@ -502,8 +437,20 @@ impl<Element> NamedElementsCollection<Element, Vec<usize>> {
     ///     assert_eq!(molecule.get_by_name(&format!("Atom{}",i)).unwrap().len(), 2);
     /// }
     /// ```
-    pub fn push_with_name(&mut self, name: &str, element: Element) {
-        self._push_with_name(name, element);
+    pub fn push(&mut self, name: &str, element: Element)
+    {
+        self._push(name, element);        
+        // // move element in the list handling elements
+        // let name = String::from(name);
+
+        // // add the index of the new element in the HashMap
+        // self.hmap.add_entry(&name, self.list.len());
+
+        // // then push at the end of the collection
+        // self.list.push(ElementBundle {
+        //     elem: element,
+        //     name: name,
+        // });
     }
 }
 
@@ -521,9 +468,9 @@ impl<Element> NamedElementsCollection<Element, Vec<usize>> {
     /// struct Atom { proton: u8, neutron: u8, };
     /// let mut water = DNEC::<Atom>::new();
     ///
-    /// water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// water.push_with_name("Oxygen", Atom{ proton:8, neutron:8 });
+    /// water.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// water.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// water.push("Oxygen", Atom{ proton:8, neutron:8 });
     ///
     /// let mut v = water.get_by_name("Hydrogen").unwrap();
     ///
@@ -557,7 +504,7 @@ where
     HashMap<String, Indexes>: Adjustable,
     Indexes: Indexable,
 {
-    type Output = Element;
+    type Output = ElementBundle<Element>;
 
     /// Gets access to an element by providing its index in the collection.
     ///
@@ -575,10 +522,10 @@ where
     /// struct Atom { proton: u8, neutron: u8, };
     /// let mut molecule = UNEC::<Atom>::new();
     ///
-    /// molecule.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// molecule.push_with_name("Helium", Atom{ proton:2, neutron:2 });
-    /// assert_eq!(molecule[1].proton, 2);
-    /// assert_eq!(molecule[1].neutron, 2);
+    /// molecule.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// molecule.push("Helium", Atom{ proton:2, neutron:2 });
+    /// assert_eq!(molecule[1].elem.proton, 2);
+    /// assert_eq!(molecule[1].elem.neutron, 2);
     /// ```
     fn index(&self, index: usize) -> &Self::Output {
         // get reference on vector of items
@@ -607,19 +554,19 @@ where
     /// struct Atom { proton: u8, neutron: u8, };
     /// let mut molecule = UNEC::<Atom>::new();
     ///
-    /// molecule.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// molecule.push_with_name("Helium", Atom{ proton:2, neutron:2 });
-    /// assert_eq!(molecule[1].proton, 2);
-    /// assert_eq!(molecule[1].neutron, 2);
+    /// molecule.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// molecule.push("Helium", Atom{ proton:2, neutron:2 });
+    /// assert_eq!(molecule[1].elem.proton, 2);
+    /// assert_eq!(molecule[1].elem.neutron, 2);
     /// ```
-    fn index_mut(&mut self, index: usize) -> &mut Element {
+    fn index_mut(&mut self, index: usize) -> &mut ElementBundle<Element> {
         // get reference on vector of items
         self.get_mut(index).unwrap()
     }
 }
 
 impl<'a, Element> Index<&'a str> for NamedElementsCollection<Element, usize> {
-    type Output = Element;
+    type Output = ElementBundle<Element>;
 
     /// Gets access to an element by providing its name in the collection. This only works for
     /// non-duplicated named objets (UNEC) because this trait returns a reference and cannot work with
@@ -639,15 +586,15 @@ impl<'a, Element> Index<&'a str> for NamedElementsCollection<Element, usize> {
     /// struct Atom { proton: u8, neutron: u8, };
     /// let mut molecule = UNEC::<Atom>::new();
     ///
-    /// molecule.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// molecule.push_with_name("Helium", Atom{ proton:2, neutron:2 });
-    /// assert_eq!(molecule["Hydrogen"].proton, 1);
-    /// assert_eq!(molecule["Hydrogen"].neutron, 0);
+    /// molecule.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// molecule.push("Helium", Atom{ proton:2, neutron:2 });
+    /// assert_eq!(molecule["Hydrogen"].elem.proton, 1);
+    /// assert_eq!(molecule["Hydrogen"].elem.neutron, 0);
     /// ```
     fn index(&self, name: &str) -> &Self::Output {
         // get reference on vector of items
         let index = *self.hmap.get(name).unwrap();
-        &self.list.get(index).unwrap().elem
+        &self.list.get(index).unwrap()
     }
 }
 
@@ -664,7 +611,7 @@ impl<Element, Indexes> IntoIterator for NamedElementsCollection<Element, Indexes
 where
     Indexes: Indexable,
 {
-    type Item = Element;
+    type Item = ElementBundle<Element>;
     type IntoIter = NecIntoIterator<Element>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -675,12 +622,9 @@ where
 }
 
 impl<Element> Iterator for NecIntoIterator<Element> {
-    type Item = Element;
+    type Item = ElementBundle<Element>;
     fn next(&mut self) -> Option<Self::Item> {
-        match self.iter.next() {
-            Some(v) => Some(v.elem),
-            None => None,
-        }
+        self.iter.next()
     }
 }
 
@@ -693,7 +637,7 @@ impl<'a, Element, Indexes> IntoIterator for &'a NamedElementsCollection<Element,
 where
     Indexes: Indexable,
 {
-    type Item = &'a Element;
+    type Item = &'a ElementBundle<Element>;
     type IntoIter = NecIter<'a, Element>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -704,12 +648,9 @@ where
 }
 
 impl<'a, Element> Iterator for NecIter<'a, Element> {
-    type Item = &'a Element;
+    type Item = &'a ElementBundle<Element>;
     fn next(&mut self) -> Option<Self::Item> {
-        match self.iter.next() {
-            Some(v) => Some(&v.elem),
-            None => None,
-        }
+        self.iter.next()
     }
 }
 
@@ -722,7 +663,7 @@ impl<'a, Element, Indexes> IntoIterator for &'a mut NamedElementsCollection<Elem
 where
     Indexes: Indexable,
 {
-    type Item = &'a mut Element;
+    type Item = &'a mut ElementBundle<Element>;
     type IntoIter = NecIterMut<'a, Element>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -733,22 +674,49 @@ where
 }
 
 impl<'a, Element> Iterator for NecIterMut<'a, Element> {
-    type Item = &'a mut Element;
+    type Item = &'a mut ElementBundle<Element>;
     fn next(&mut self) -> Option<Self::Item> {
-        match self.iter.next() {
-            Some(v) => Some(&mut v.elem),
-            None => None,
-        }
+        self.iter.next()
     }
 }
+
+
+
+
+
+/////////////
+
+
+
+pub trait Pushable<Element> {
+    fn push(&mut self, name: &str, element: Element);
+}
+
+impl<Element> Pushable<Element> for NamedElementsCollection<Element, usize>
+{
+    fn push(&mut self, name: &str, element: Element) {
+
+    }
+}
+
+impl<Element> Pushable<Element> for NamedElementsCollection<Element, Vec<usize>>
+{
+    fn push(&mut self, name: &str, element: Element) {
+
+    }
+}
+
+///////////////////
+
 
 //-----------------------------------------------------------------------
 // Clone
 //-----------------------------------------------------------------------
-/*
 impl<Element: Clone, Indexes> Clone for NamedElementsCollection<Element, Indexes>
 where
     HashMap<String, Indexes>: Adjustable,
+    Indexes: Indexable, 
+    NamedElementsCollection<Element, Indexes>: Pushable<Element>
 {
     /// Builds a collection clone from an original one.
     ///
@@ -759,70 +727,37 @@ where
     /// struct Atom { proton: u8, neutron: u8, };
     /// let mut water = DNEC::<Atom>::new();
     ///
-    /// water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// water.push_with_name("Hydrogen", Atom{ proton:1, neutron:0 });
-    /// water.push_with_name("Oxygen", Atom{ proton:8, neutron:8 });
+    /// water.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// water.push("Hydrogen", Atom{ proton:1, neutron:0 });
+    /// water.push("Oxygen", Atom{ proton:8, neutron:8 });
     ///
     /// let mut peroxyide = water.clone();
-    /// peroxyide.push_with_name("Oxygen", Atom{ proton:8, neutron:8 });
+    /// peroxyide.push("Oxygen", Atom{ proton:8, neutron:8 });
     /// assert_eq!(peroxyide.len(), 4);
     /// ```
     fn clone(&self) -> Self {
         let mut cloned = NamedElementsCollection::<Element, Indexes>::new();
 
         // copy other fields which can be potentially already set
-        for (i, element) in self.iter().enumerate() {
-            cloned._push_with_name(&self.get_name(i).unwrap(), element.clone());
+        for e in self {
+            cloned.push(&e.name, e.elem.clone());
         }
+
+
+        // for (i, element) in self.iter().enumerate() {
+        //     cloned.push(&self.get_name(i).unwrap(), element.clone());
+        // }
         cloned
     }
 }
-*/
 
 //-----------------------------------------------------------------------
 // From
 //-----------------------------------------------------------------------
-impl<'a, Element: Nameable, Indexes> From<Vec<Element>>
-    for NamedElementsCollection<Element, Indexes>
+impl<'a, Element> From<Vec<(String, Element)>>
+    for NamedElementsCollection<Element, usize>
 where
-    HashMap<String, Indexes>: Adjustable,
-    Indexes: Indexable,
-{
-    /// Builds a collection from a vector of elements. `Element` must implement
-    /// the `Nameable` trait.
-    ///
-    /// # Examples
-    /// ```
-    /// use nec::nec::UNEC;
-    ///
-    /// struct Atom { name: String, proton: u8, neutron: u8, };
-    /// impl nec::nameable::Nameable for Atom {
-    ///     fn get_name(&self) -> &str { &self.name }
-    /// }
-    ///
-    /// let v: Vec<_> =
-    ///         (0..10).map(|i| Atom{ name: format!("ATOM{}",i) ,proton:i, neutron:i }).collect();
-    ///
-    /// let molecule = UNEC::<Atom>::from(v);
-    /// assert_eq!(molecule[1].proton, 1);
-    /// assert_eq!(molecule[9].neutron, 9);
-    /// ```
-    fn from(source: Vec<Element>) -> Self {
-        let mut collection = NamedElementsCollection::<Element, Indexes>::new();
-
-        for e in source {
-            collection.push(e);
-        }
-
-        collection
-    }
-}
-
-impl<'a, Element, Indexes> From<Vec<(String, Element)>>
-    for NamedElementsCollection<Element, Indexes>
-where
-    HashMap<String, Indexes>: Adjustable,
-    Indexes: Indexable,
+    HashMap<String, usize>: Adjustable,
 {
     /// Builds a collection from a vector of `(String, Element)` tuples.
     ///
@@ -835,14 +770,43 @@ where
     /// let v: Vec<_> = (0..10).map(|i| (format!("ATOM{}",i), Atom{ proton:i, neutron:i })).collect();
     ///
     /// let molecule = UNEC::<Atom>::from(v);
-    /// assert_eq!(molecule[1].proton, 1);
-    /// assert_eq!(molecule[9].neutron, 9);
+    /// assert_eq!(molecule[1].elem.proton, 1);
+    /// assert_eq!(molecule[9].elem.neutron, 9);
     /// ```
     fn from(source: Vec<(String, Element)>) -> Self {
-        let mut collection = NamedElementsCollection::<Element, Indexes>::new();
+        let mut collection = NamedElementsCollection::<Element, usize>::new();
 
         for e in source {
-            collection._push_with_name(&e.0, e.1);
+            collection.push(&e.0, e.1);
+        }
+
+        collection
+    }
+}
+
+impl<'a, Element> From<Vec<(String, Element)>> for NamedElementsCollection<Element, Vec<usize>>
+where
+    HashMap<String, Vec<usize>>: Adjustable,
+{
+    /// Builds a collection from a vector of `(String, Element)` tuples.
+    ///
+    /// # Examples
+    /// ```
+    /// use nec::nec::UNEC;
+    ///
+    /// struct Atom { proton: u8, neutron: u8, };
+    ///
+    /// let v: Vec<_> = (0..10).map(|i| (format!("ATOM{}",i), Atom{ proton:i, neutron:i })).collect();
+    ///
+    /// let molecule = UNEC::<Atom>::from(v);
+    /// assert_eq!(molecule[1].elem.proton, 1);
+    /// assert_eq!(molecule[9].elem.neutron, 9);
+    /// ```
+    fn from(source: Vec<(String, Element)>) -> Self {
+        let mut collection = NamedElementsCollection::<Element, Vec<usize>>::new();
+
+        for e in source {
+            collection.push(&e.0, e.1);
         }
 
         collection
@@ -852,7 +816,7 @@ where
 //-----------------------------------------------------------------------
 // Debug
 //-----------------------------------------------------------------------
-impl<Element: Nameable + fmt::Debug, Indexes: fmt::Debug> fmt::Debug
+impl<Element: fmt::Debug, Indexes: fmt::Debug> fmt::Debug
     for NamedElementsCollection<Element, Indexes>
 where
     HashMap<String, Indexes>: Adjustable,
@@ -905,15 +869,15 @@ type UniqueNamedElementsCollection<Element> = NamedElementsCollection<Element, u
 /// struct Atom { proton: u8, neutron: u8, };
 /// let mut molecule = UNEC::<Atom>::new();
 ///
-/// molecule.push_with_name("Hydrogen", Atom { proton: 1, neutron: 0, });
-/// molecule.push_with_name("Hydrogen", Atom { proton: 1, neutron: 0, });
-/// molecule.push_with_name("Hydrogen", Atom { proton: 1, neutron: 0, });
-/// assert_eq!(molecule.get(0).unwrap().neutron, 0);
+/// molecule.push("Hydrogen", Atom { proton: 1, neutron: 0, });
+/// molecule.push("Hydrogen", Atom { proton: 1, neutron: 0, });
+/// molecule.push("Hydrogen", Atom { proton: 1, neutron: 0, });
+/// assert_eq!(molecule.get(0).unwrap().elem.neutron, 0);
 ///
 /// // this last push is the winner
-/// molecule.push_with_name("Hydrogen", Atom { proton: 1, neutron: 1, });
+/// molecule.push("Hydrogen", Atom { proton: 1, neutron: 1, });
 /// assert_eq!(molecule.len(), 1);
-/// assert_eq!(molecule.get(0).unwrap().neutron, 1);
+/// assert_eq!(molecule.get(0).unwrap().elem.neutron, 1);
 /// ```
 pub type UNEC<Element> = UniqueNamedElementsCollection<Element>;
 
@@ -929,10 +893,10 @@ type DuplicateNamedElementsCollection<Element> = NamedElementsCollection<Element
 /// struct Atom { proton: u8, neutron: u8, };
 /// let mut molecule = DNEC::<Atom>::new();
 ///
-/// molecule.push_with_name("Hydrogen", Atom { proton: 1, neutron: 0, });
-/// molecule.push_with_name("Hydrogen", Atom { proton: 1, neutron: 0, });
-/// molecule.push_with_name("Hydrogen", Atom { proton: 1, neutron: 0, });
-/// molecule.push_with_name("Hydrogen", Atom { proton: 1, neutron: 1, });
+/// molecule.push("Hydrogen", Atom { proton: 1, neutron: 0, });
+/// molecule.push("Hydrogen", Atom { proton: 1, neutron: 0, });
+/// molecule.push("Hydrogen", Atom { proton: 1, neutron: 0, });
+/// molecule.push("Hydrogen", Atom { proton: 1, neutron: 1, });
 /// assert_eq!(molecule.len(), 4);
 /// ```
 pub type DNEC<Element> = DuplicateNamedElementsCollection<Element>;

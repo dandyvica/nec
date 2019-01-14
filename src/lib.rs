@@ -1,28 +1,14 @@
 pub mod nec;
 pub mod adjustable;
-pub mod nameable;
 
 // setup module to build test data
 mod setup {
 
     // setup data structures for all tests
     #[derive(Clone)]
-    pub struct WithName {
-        pub name: String,
-        pub x: usize,
-        pub y: usize,
-    }
-
-    impl ::nameable::Nameable for WithName {
-        fn get_name(&self) -> &str {
-            &self.name
-        }
-    }
-
-    #[derive(Clone)]
-    pub struct WithoutName {
-        pub x: usize,
-        pub y: usize,
+    pub struct Atom {
+        pub proton: usize,
+        pub neutron: usize,
     }
 
 }
@@ -31,7 +17,7 @@ mod setup {
 mod tests {
 
     use nec::{DNEC, UNEC};
-    use setup::{WithName, WithoutName};
+    use setup::Atom;
 
     //use adjustable::Adjustable;
     //use nameable::Nameable;
@@ -41,28 +27,27 @@ mod tests {
     fn test_unec() {
         // build test data
         let v1: Vec<_> = (0..100)
-            .map(|i| WithName {
-                name: format!("NAME{}", i),
-                x: i,
-                y: i,
-            })
+            .map(|i| (format!("NAME{}", i), Atom {
+                proton: i,
+                neutron: i,
+            }))
             .collect();
 
         // initial test
-        let mut nec = UNEC::<WithName>::new();
+        let mut nec = UNEC::<Atom>::new();
         assert_eq!(nec.len(), 0);
         assert!(nec.get(0).is_none());
 
         //---------------------------------------------------------------------------
         // From trait
         //---------------------------------------------------------------------------
-        nec = UNEC::<WithName>::from(v1);
+        nec = UNEC::<Atom>::from(v1);
 
         for i in 0..100 {
             let s = &nec[i];
             assert_eq!(s.name, format!("NAME{}", i));
-            assert_eq!(s.x, i);
-            assert_eq!(s.y, i);
+            assert_eq!(s.elem.proton, i);
+            assert_eq!(s.elem.neutron, i);
         }
 
         //---------------------------------------------------------------------------
@@ -71,16 +56,16 @@ mod tests {
         let mut i = 0;
         for e in &nec {
             assert_eq!(e.name, format!("NAME{}", i));
-            assert_eq!(e.x, i);
-            assert_eq!(e.y, i);
+            assert_eq!(e.elem.proton, i);
+            assert_eq!(e.elem.neutron, i);
             i += 1;
         }
 
         i = 0;
         for e in &mut nec {
             assert_eq!(e.name, format!("NAME{}", i));
-            assert_eq!(e.x, i);
-            assert_eq!(e.y, i);
+            assert_eq!(e.elem.proton, i);
+            assert_eq!(e.elem.neutron, i);
             i += 1;
         }
 
@@ -89,12 +74,12 @@ mod tests {
         //---------------------------------------------------------------------------
         for (i, s) in nec.iter().enumerate() {
             assert_eq!(s.name, format!("NAME{}", i));
-            assert_eq!(s.x, i);
-            assert_eq!(s.y, i);
+            assert_eq!(s.elem.proton, i);
+            assert_eq!(s.elem.neutron, i);
         }
 
         {
-            let v: Vec<_> = nec.iter().filter(|e| e.x % 2 == 0).collect();
+            let v: Vec<_> = nec.iter().filter(|e| e.elem.proton % 2 == 0).collect();
             assert_eq!(v.len(), 50);
         }
 
@@ -115,8 +100,8 @@ mod tests {
         for i in 0..100 {
             let e = nec2.get(i).unwrap();
             assert_eq!(e.name, format!("NAME{}", i));
-            assert_eq!(e.x, i);
-            assert_eq!(e.y, i);
+            assert_eq!(e.elem.proton, i);
+            assert_eq!(e.elem.neutron, i);
         }
 
         //---------------------------------------------------------------------------
@@ -147,7 +132,7 @@ mod tests {
     #[test]
     fn test_dnec() {
         // initial test
-        let mut nec = DNEC::<WithoutName>::new();
+        let mut nec = DNEC::<Atom>::new();
         assert_eq!(nec.len(), 0);
         assert!(nec.get(0).is_none());
 
@@ -155,10 +140,10 @@ mod tests {
         // Fill nec with duplicate data
         //---------------------------------------------------------------------------
         for i in 0..50 {
-            nec.push_with_name("A", WithoutName { x: i, y: i });
+            nec.push("A", Atom { proton: i, neutron: i });
         }
         for i in 50..100 {
-            nec.push_with_name("B", WithoutName { x: i, y: i });
+            nec.push("B", Atom { proton: i, neutron: i });
         }
 
         //---------------------------------------------------------------------------
@@ -167,16 +152,16 @@ mod tests {
         let mut i = 0;
         for e in &nec {
             // assert_eq!(e.name, format!("NAME{}", i));
-            assert_eq!(e.x, i);
-            assert_eq!(e.y, i);
+            assert_eq!(e.elem.proton, i);
+            assert_eq!(e.elem.neutron, i);
             i += 1;
         }
 
         i = 0;
         for e in &mut nec {
             //assert_eq!(e.name, format!("NAME{}", i));
-            assert_eq!(e.x, i);
-            assert_eq!(e.y, i);
+            assert_eq!(e.elem.proton, i);
+            assert_eq!(e.elem.neutron, i);
             i += 1;
         }
 
@@ -185,12 +170,12 @@ mod tests {
         //---------------------------------------------------------------------------
         for (i, s) in nec.iter().enumerate() {
             //assert_eq!(s.name, format!("NAME{}", i));
-            assert_eq!(s.x, i);
-            assert_eq!(s.y, i);
+            assert_eq!(s.elem.proton, i);
+            assert_eq!(s.elem.neutron, i);
         }
 
         {
-            let v: Vec<_> = nec.iter().filter(|e| e.x % 2 == 0).collect();
+            let v: Vec<_> = nec.iter().filter(|e| e.elem.proton % 2 == 0).collect();
             assert_eq!(v.len(), 50);
         }
 
@@ -212,8 +197,8 @@ mod tests {
         for i in 0..100 {
             let e = nec2.get(i).unwrap();
             //assert_eq!(nec.get_name(i).unwrap().original_name, format!("NAME{}", i));
-            assert_eq!(e.x, i);
-            assert_eq!(e.y, i);
+            assert_eq!(e.elem.proton, i);
+            assert_eq!(e.elem.neutron, i);
         }
 
         //---------------------------------------------------------------------------
