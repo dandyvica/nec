@@ -3,7 +3,7 @@
 //!
 //! Element names could also be duplicated, and getting an element providing its name could possibly return several elements.
 //! The name should be provided when pushing an element into the collection.
-//! 
+//!
 //! # Examples
 //! ```
 //! use nec::nec::DNEC;
@@ -14,7 +14,7 @@
 //! water.push("Hydrogen", Atom{ proton:1, neutron:0 });
 //! water.push("Hydrogen", Atom{ proton:1, neutron:0 });
 //! water.push("Oxygen", Atom{ proton:8, neutron:8 });
-//! 
+//!
 //! assert_eq!(water.get_by_name("Hydrogen").unwrap().len(), 2);
 //! ```
 //! ```
@@ -26,13 +26,13 @@
 //! water.push("Hydrogen", Atom{ proton:1, neutron:0 });
 //! water.push("Hydrogen", Atom{ proton:1, neutron:0 });
 //! water.push("Oxygen", Atom{ proton:8, neutron:8 });
-//! 
+//!
 //! assert_eq!(water.len(), 2);
 //! ```
 
 use std::collections::HashMap;
-use std::fmt;
 use std::convert::From;
+use std::fmt;
 use std::ops::{Index, IndexMut};
 use std::slice::{Iter, IterMut};
 
@@ -60,9 +60,9 @@ impl Indexable for Vec<usize> {}
 //#[derive(Clone)]
 pub struct NamedElementsCollection<Element, Indexes: Indexable> {
     /// List of Element structs
-    list: Vec<ElementBundle<Element>>,
+    pub list: Vec<ElementBundle<Element>>,
     /// Hashmap keeping track of the name vs. index (or indexes) of the structure in the previous list
-    hmap: HashMap<String, Indexes>,
+    pub hmap: HashMap<String, Indexes>,
 }
 
 impl<Element, Indexes> NamedElementsCollection<Element, Indexes>
@@ -257,40 +257,22 @@ where
         self.hmap.clear();
     }
 
-    /// Removes an element from the collection by providing its index.
-    ///
-    /// # Arguments
-    /// * `index` - Element index.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `index` is out of bounds.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use nec::nec::UNEC;
-    ///
-    /// struct Atom { proton: u8, neutron: u8, };
-    /// let mut molecule = UNEC::<Atom>::new();
-    ///
-    /// for i in 0..10 {
-    ///     molecule.push(&format!("Atom{}",i), Atom{ proton:i, neutron:i });
-    /// }
-    ///
-    /// molecule.remove(5);
-    /// assert_eq!(molecule.len(),9);
-    /// ```
-    pub fn remove(&mut self, index: usize) -> ElementBundle<Element> {
-        // delete from main list
-        let e = self.list.remove(index);
+    // pub fn insert(&mut self, index: usize, name: &str, element: Element) {
+    //     // insert element at index in the vector
+    //     self.list.insert(
+    //         index,
+    //         ElementBundle {
+    //             elem: element,
+    //             name: String::from(name),
+    //         },
+    //     );
 
-        // remove relevant indexes from hashmap
-        let name = self.list.get(index).unwrap().name.clone();
-        self.hmap.delete_entry(&name, index);
+    //     // manage indexes in the hash
+    //     let name = self.list.get(index).unwrap().name.clone();
+    //     self.hmap.insert_element(&name, index);
 
-        e
-    }
+    //     e
+    // }
 
     /// Returns the list of elements' names, without duplication.
     ///
@@ -342,24 +324,7 @@ where
         }
     }
 
-    fn _push(&mut self, name: &str, element: Element) {
-        // add element
-        self.list.push(ElementBundle {
-            elem: element,
-            name: String::from(name),
-        });
-
-        // add index in the hash
-        let index = self.list.len() - 1;
-        self.hmap.add_entry(name, index);
-    }
-}
-
-//-----------------------------------------------------------------------
-// Specializations
-//-----------------------------------------------------------------------
-impl<Element> NamedElementsCollection<Element, usize> {
-    /// Adds an item at the end of the collection. 
+    /// Adds an item at the end of the collection.
     ///
     /// # Arguments
     /// * `name` - Element's name
@@ -385,77 +350,78 @@ impl<Element> NamedElementsCollection<Element, usize> {
     /// for i in 0..10_u8 {
     ///     assert_eq!(molecule[i as usize].elem.proton, i);
     /// }
-    /// ```
     pub fn push(&mut self, name: &str, element: Element) {
-        // if name is already in our list, just replace the element
-        if self.hmap.contains_key(name) {
-            // get index of this element
-            let index = *self.hmap.get(name).unwrap();
+        match self.hmap.already_in(name) {
+            // if name is already in our list, just replace the element
+            Some(index) => {
+                // and replace the element struct
+                self.list[index] = ElementBundle {
+                    elem: element,
+                    name: String::from(name),
+                };
 
-            // and replace the element tuple
-            self.list[index] = ElementBundle {
-                elem: element,
-                name: String::from(name),
-            };
+                // and also replace in hmap
+                self.hmap.replace_element(name, index);
+            }
+            // if not, just add the element
+            None => {
+                // add element
+                self.list.push(ElementBundle {
+                    elem: element,
+                    name: String::from(name),
+                });
 
-            // and also replace in hmap
-            self.hmap.replace_entry(name, index);
-        }
-        // otherwise, business as usual
-        else {
-            self._push(name, element);
+                // add index in the hash
+                let index = self.list.len() - 1;
+                self.hmap.add_element(name, index);
+            }
         }
     }
-}
 
-impl<Element> NamedElementsCollection<Element, Vec<usize>> {
-    /// Adds an item at the end of the collection.
+
+    /// Removes an element from the collection by providing its index.
     ///
     /// # Arguments
-    /// * `name` - Element's name
-    /// * `element` - Element structure
+    /// * `index` - Element index.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `index` is out of bounds.
     ///
     /// # Examples
     ///
     /// ```
-    /// use nec::nec::DNEC;
+    /// use nec::nec::UNEC;
     ///
     /// struct Atom { proton: u8, neutron: u8, };
-    /// let mut molecule = DNEC::<Atom>::new();
+    /// let mut molecule = UNEC::<Atom>::new();
     ///
-    /// for i in 0..10_u8 {
+    /// for i in 0..10 {
     ///     molecule.push(&format!("Atom{}",i), Atom{ proton:i, neutron:i });
     /// }
     ///
-    /// for i in 0..10_u8 {
-    ///     molecule.push(&format!("Atom{}",i), Atom{ proton:i, neutron:i });
-    /// }
-    ///
-    /// assert_eq!(molecule.len(), 20);
-    ///
-    /// for i in 0..10_u8 {
-    ///     assert_eq!(molecule.get_by_name(&format!("Atom{}",i)).unwrap().len(), 2);
-    /// }
+    /// molecule.remove(5);
+    /// assert_eq!(molecule.len(),9);
+    /// assert_eq!(molecule.get_name(0).unwrap(),"Atom0");
+    /// assert_eq!(molecule.get_name(8).unwrap(),"Atom9");
     /// ```
-    pub fn push(&mut self, name: &str, element: Element)
-    {
-        self._push(name, element);        
-        // // move element in the list handling elements
-        // let name = String::from(name);
+    pub fn remove(&mut self, index: usize) -> ElementBundle<Element> {
+        // delete from main list
+        let e = self.list.remove(index);
 
-        // // add the index of the new element in the HashMap
-        // self.hmap.add_entry(&name, self.list.len());
+        // remove relevant indexes from hashmap
+        let name = self.list.get(index).unwrap().name.clone();
+        self.hmap.delete_element(&name, index);
 
-        // // then push at the end of the collection
-        // self.list.push(ElementBundle {
-        //     elem: element,
-        //     name: name,
-        // });
-    }
+        e
+    }    
 }
 
+//-----------------------------------------------------------------------
+// Specializations
+//-----------------------------------------------------------------------
 impl<Element> NamedElementsCollection<Element, Vec<usize>> {
-    /// Returns a vector of elements having the same name. If `name`is not found, `Noen`is returned.
+    /// Returns a vector of elements having the same name. If `name`is not found, `None`is returned.
     ///
     /// # Arguments
     /// * `name` - Element's name
@@ -628,7 +594,7 @@ impl<Element> Iterator for NecIntoIterator<Element> {
     }
 }
 
-/// Structure helper for non-consuming iterator.
+/// StruDebugcture helper for non-consuming iterator.
 pub struct NecIter<'a, Element: 'a> {
     iter: Iter<'a, ElementBundle<Element>>,
 }
@@ -680,50 +646,20 @@ impl<'a, Element> Iterator for NecIterMut<'a, Element> {
     }
 }
 
-
-
-
-
-/////////////
-
-
-
-pub trait Pushable<Element> {
-    fn push(&mut self, name: &str, element: Element);
-}
-
-impl<Element> Pushable<Element> for NamedElementsCollection<Element, usize>
-{
-    fn push(&mut self, name: &str, element: Element) {
-
-    }
-}
-
-impl<Element> Pushable<Element> for NamedElementsCollection<Element, Vec<usize>>
-{
-    fn push(&mut self, name: &str, element: Element) {
-
-    }
-}
-
-///////////////////
-
-
 //-----------------------------------------------------------------------
 // Clone
 //-----------------------------------------------------------------------
 impl<Element: Clone, Indexes> Clone for NamedElementsCollection<Element, Indexes>
 where
     HashMap<String, Indexes>: Adjustable,
-    Indexes: Indexable, 
-    NamedElementsCollection<Element, Indexes>: Pushable<Element>
+    Indexes: Indexable,
 {
     /// Builds a collection clone from an original one.
     ///
     /// # Examples
     /// ```
     /// use nec::nec::DNEC;
-    ///
+    /// #[derive(Clone)]
     /// struct Atom { proton: u8, neutron: u8, };
     /// let mut water = DNEC::<Atom>::new();
     ///
@@ -743,10 +679,6 @@ where
             cloned.push(&e.name, e.elem.clone());
         }
 
-
-        // for (i, element) in self.iter().enumerate() {
-        //     cloned.push(&self.get_name(i).unwrap(), element.clone());
-        // }
         cloned
     }
 }
@@ -754,10 +686,10 @@ where
 //-----------------------------------------------------------------------
 // From
 //-----------------------------------------------------------------------
-impl<'a, Element> From<Vec<(String, Element)>>
-    for NamedElementsCollection<Element, usize>
+impl<Element, Indexes> From<Vec<(String, Element)>> for NamedElementsCollection<Element, Indexes>
 where
-    HashMap<String, usize>: Adjustable,
+    HashMap<String, Indexes>: Adjustable,
+    Indexes: Indexable,
 {
     /// Builds a collection from a vector of `(String, Element)` tuples.
     ///
@@ -774,36 +706,7 @@ where
     /// assert_eq!(molecule[9].elem.neutron, 9);
     /// ```
     fn from(source: Vec<(String, Element)>) -> Self {
-        let mut collection = NamedElementsCollection::<Element, usize>::new();
-
-        for e in source {
-            collection.push(&e.0, e.1);
-        }
-
-        collection
-    }
-}
-
-impl<'a, Element> From<Vec<(String, Element)>> for NamedElementsCollection<Element, Vec<usize>>
-where
-    HashMap<String, Vec<usize>>: Adjustable,
-{
-    /// Builds a collection from a vector of `(String, Element)` tuples.
-    ///
-    /// # Examples
-    /// ```
-    /// use nec::nec::UNEC;
-    ///
-    /// struct Atom { proton: u8, neutron: u8, };
-    ///
-    /// let v: Vec<_> = (0..10).map(|i| (format!("ATOM{}",i), Atom{ proton:i, neutron:i })).collect();
-    ///
-    /// let molecule = UNEC::<Atom>::from(v);
-    /// assert_eq!(molecule[1].elem.proton, 1);
-    /// assert_eq!(molecule[9].elem.neutron, 9);
-    /// ```
-    fn from(source: Vec<(String, Element)>) -> Self {
-        let mut collection = NamedElementsCollection::<Element, Vec<usize>>::new();
+        let mut collection = NamedElementsCollection::<Element, Indexes>::new();
 
         for e in source {
             collection.push(&e.0, e.1);

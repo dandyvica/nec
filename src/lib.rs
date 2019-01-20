@@ -1,5 +1,5 @@
-pub mod nec;
 pub mod adjustable;
+pub mod nec;
 
 // setup module to build test data
 mod setup {
@@ -27,10 +27,15 @@ mod tests {
     fn test_unec() {
         // build test data
         let v1: Vec<_> = (0..100)
-            .map(|i| (format!("NAME{}", i), Atom {
-                proton: i,
-                neutron: i,
-            }))
+            .map(|i| {
+                (
+                    format!("NAME{}", i),
+                    Atom {
+                        proton: i,
+                        neutron: i,
+                    },
+                )
+            })
             .collect();
 
         // initial test
@@ -140,10 +145,22 @@ mod tests {
         // Fill nec with duplicate data
         //---------------------------------------------------------------------------
         for i in 0..50 {
-            nec.push("A", Atom { proton: i, neutron: i });
+            nec.push(
+                "A",
+                Atom {
+                    proton: i,
+                    neutron: i,
+                },
+            );
         }
         for i in 50..100 {
-            nec.push("B", Atom { proton: i, neutron: i });
+            nec.push(
+                "B",
+                Atom {
+                    proton: i,
+                    neutron: i,
+                },
+            );
         }
 
         //---------------------------------------------------------------------------
